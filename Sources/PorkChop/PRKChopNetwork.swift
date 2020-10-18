@@ -1,9 +1,7 @@
 import Foundation
 import Combine
 
-@available(iOS 13.0, *)
-@available(macOS 10.15, *)
-class PRKChopNetworking {
+public class PRKChopNetworking {
     var session: URLSession = URLSession(configuration: .default)
     
     var configuration: URLSessionConfiguration = {
@@ -87,7 +85,7 @@ class PRKChopNetworking {
     }
 }
 
-enum HTTPRequestType: String {
+public enum HTTPRequestType: String {
     case get = "GET"
     case post = "POST"
     case put = "PUT"
@@ -95,7 +93,7 @@ enum HTTPRequestType: String {
     case patch = "PATCH"
 }
 
-enum NetworkErrorType: Error, LocalizedError {
+public enum NetworkErrorType: Error, LocalizedError {
     case badStatus(status: Int)
     case invalidResponse
     case unauthorized
@@ -116,6 +114,6 @@ enum NetworkErrorType: Error, LocalizedError {
         case .invalidURL: return "URL is malformed."
         }
     }
-    var errorDescription: String? { return localizedDescription }
+    public var errorDescription: String? { return localizedDescription }
 }
 

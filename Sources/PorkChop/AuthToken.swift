@@ -13,9 +13,7 @@ protocol PRKChopAuthToken: Encodable, Decodable {
     func expDate() -> Date?
 }
 
-@available(iOS 10.0, *)
-@available(macOS 10.12, *)
-struct PRCKChopDefaultAuthenticationToken: PRKChopAuthToken {
+public struct PRCKChopDefaultAuthenticationToken: PRKChopAuthToken {
     /** Assumes an ISO8601 Date String */
     var expirationDate: String
     var token: String
