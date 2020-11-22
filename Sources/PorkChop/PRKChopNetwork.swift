@@ -28,15 +28,26 @@ public class PRKChopNetworking {
     
     public init() { }
     
-    public func make<T: Encodable>(for url: String, httpMethod: HTTPRequestType, body: T, completion: @escaping (_ result: Result<Data, Error>) -> Void) throws {
+    public func make<T: Encodable>(for url: String, httpMethod: HTTPRequestType, body: T, query: [URLQueryItem]? = nil, completion: @escaping (_ result: Result<Data, Error>) -> Void) throws {
         // tricky to deal with since URL can take "invalid" URLs and still give you a non-nil value.
         // just for sanity sake, we check if the value is nil and throw if it is.
         guard let url = URL(string: url) else {
             throw NetworkErrorType.invalidURL
         }
-        let request = createRequest(url: url, httpMethod: httpMethod, body: body)
+        var request: URLRequest!
+        if query != nil {
+            request = createRequest(url: url, httpMethod: httpMethod, body: body, query: query!)
+        } else {
+            request = createRequest(url: url, httpMethod: httpMethod, body: body)
+        }
         let publisher = createPublisherRequest(url: request)
         consumeRequest(request: publisher, completion: completion)
+    }
+    
+    public func createRequest<T: Encodable>(url: URL, httpMethod: HTTPRequestType, body: T = PRKChopEmptyBody() as! T, query: [URLQueryItem]) -> URLRequest {
+        var r = URLComponents(url: url, resolvingAgainstBaseURL: false)!
+        r.queryItems = query
+        return URLRequest(url: r.url!)
     }
     
     public func createRequest<T: Encodable>(url: URL, httpMethod: HTTPRequestType, body: T = PRKChopEmptyBody() as! T) -> URLRequest {
