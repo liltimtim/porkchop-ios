@@ -24,6 +24,7 @@ public class PRKChopNetworking {
         self.configuration.httpAdditionalHeaders = token.headerToken
         self.cachePolicy = cachePolicy
         self.defaultTimeout = defaultTimeout
+        self.session = URLSession(configuration: self.configuration)
     }
     
     public init() { }
