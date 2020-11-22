@@ -194,7 +194,7 @@ class NetworkingInterfaceTests: XCTestCase {
         // given
         let expDate = UnitTestUtils.createISODate(from: UnitTestUtils.createDate())
         let expectedTokenStructure = "\(givenTokenType) \(givenToken)"
-        sut = PRKChopNetworking(with: PRCKChopDefaultAuthenticationToken(expirationDate: expDate, token: givenToken, tokenType: givenTokenType))
+        sut = PRKChopNetworking(with: PRCKChopDefaultAuthenticationToken(expDate: expDate, token: givenToken, tokenType: givenTokenType))
 
         // when
         let result = sut.configuration.httpAdditionalHeaders as? [String:String]

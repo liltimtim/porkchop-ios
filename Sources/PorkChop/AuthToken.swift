@@ -21,6 +21,11 @@ public struct PRCKChopDefaultAuthenticationToken: PRKChopAuthToken {
     /** Computes the proper HTTP Header for Authorization in the form of "Authorization" : <auth_type> <token> */
     public var headerToken: [String:String] { return ["Authorization": "\(tokenType) \(token)"] }
     
+    public init(expDate: String, token: String, tokenType: String) {
+        self.expirationDate = expDate
+        self.token = token
+        self.tokenType = tokenType
+    }
     /**
      Determines if the token has exceeded the expiration date of the token lifespan. Compares the incoming date has not exceeded the expiration date.
      
