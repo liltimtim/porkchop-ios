@@ -2,15 +2,15 @@ import Foundation
 import Combine
 
 public class PRKChopNetworking {
-    var session: URLSession = URLSession(configuration: .default)
+    public var session: URLSession = URLSession(configuration: .default)
     
-    var configuration: URLSessionConfiguration = {
+    public var configuration: URLSessionConfiguration = {
         var config = URLSessionConfiguration.default
         config.allowsCellularAccess = true
         return config
     }()
     
-    var subscriptions: Set<AnyCancellable> = []
+    public var subscriptions: Set<AnyCancellable> = []
     
     private var sessionToken: PRKChopAuthToken?
     /* Caching policy applied to all requests for the instance of the class, default is to ignore all cache on device and on server.*/
@@ -18,7 +18,7 @@ public class PRKChopNetworking {
     /* Time in seconds the request will wait for a response before timing out */
     private var defaultTimeout: Int = 30
     
-    convenience init(with token: PRKChopAuthToken, cachePolicy: URLRequest.CachePolicy = .reloadIgnoringLocalAndRemoteCacheData, defaultTimeout: Int = 30) {
+    public convenience init(with token: PRKChopAuthToken, cachePolicy: URLRequest.CachePolicy = .reloadIgnoringLocalAndRemoteCacheData, defaultTimeout: Int = 30) {
         self.init()
         self.sessionToken = token
         self.configuration.httpAdditionalHeaders = token.headerToken
@@ -26,7 +26,7 @@ public class PRKChopNetworking {
         self.defaultTimeout = defaultTimeout
     }
     
-    func make<T: Encodable>(for url: String, httpMethod: HTTPRequestType, body: T, completion: @escaping (_ result: Result<Data, Error>) -> Void) throws {
+    public func make<T: Encodable>(for url: String, httpMethod: HTTPRequestType, body: T, completion: @escaping (_ result: Result<Data, Error>) -> Void) throws {
         // tricky to deal with since URL can take "invalid" URLs and still give you a non-nil value.
         // just for sanity sake, we check if the value is nil and throw if it is.
         guard let url = URL(string: url) else {
@@ -37,7 +37,7 @@ public class PRKChopNetworking {
         consumeRequest(request: publisher, completion: completion)
     }
     
-    func createRequest<T: Encodable>(url: URL, httpMethod: HTTPRequestType, body: T = PRKChopEmptyBody() as! T) -> URLRequest {
+    public func createRequest<T: Encodable>(url: URL, httpMethod: HTTPRequestType, body: T = PRKChopEmptyBody() as! T) -> URLRequest {
         var request = URLRequest(url: url, cachePolicy: cachePolicy, timeoutInterval: TimeInterval(defaultTimeout))
         request.httpMethod = httpMethod.rawValue
         switch httpMethod {
@@ -48,11 +48,11 @@ public class PRKChopNetworking {
         return request
     }
     
-    func createPublisherRequest(url: URLRequest) -> AnyPublisher<URLSession.DataTaskPublisher.Output, URLSession.DataTaskPublisher.Failure> {
+    public func createPublisherRequest(url: URLRequest) -> AnyPublisher<URLSession.DataTaskPublisher.Output, URLSession.DataTaskPublisher.Failure> {
         return session.dataTaskPublisher(for: url).eraseToAnyPublisher()
     }
     
-    func consumeRequest(request: AnyPublisher<URLSession.DataTaskPublisher.Output, URLSession.DataTaskPublisher.Failure>,
+    public func consumeRequest(request: AnyPublisher<URLSession.DataTaskPublisher.Output, URLSession.DataTaskPublisher.Failure>,
                         completion: @escaping ( _ result: Result<Data, Error>) -> Void) {
         request
             .receive(on: DispatchQueue.main)
