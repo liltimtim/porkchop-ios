@@ -203,6 +203,17 @@ class NetworkingInterfaceTests: XCTestCase {
         XCTAssertEqual(result?["Authorization"], expectedTokenStructure)
     }
     
+    func test_createValidURL_withQueryParameters() {
+        // given
+        let query = [URLQueryItem(name: "test", value: "value")]
+        let expectedString = "test=value"
+        // when
+        let result = sut.createRequest(url: givenMockURL, httpMethod: .post, body: PRKChopEmptyBody(), query: query)
+        // then
+        XCTAssertNotNil(result.url?.query)
+        XCTAssertEqual(result.url?.query, expectedString)
+    }
+    
     // MARK: - URL Request Creation Tests
     func test_createGETRequest_bodyShouldBeNil() {
         // when
