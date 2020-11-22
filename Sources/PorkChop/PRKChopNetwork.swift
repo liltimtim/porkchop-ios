@@ -26,6 +26,8 @@ public class PRKChopNetworking {
         self.defaultTimeout = defaultTimeout
     }
     
+    public init() { }
+    
     public func make<T: Encodable>(for url: String, httpMethod: HTTPRequestType, body: T, completion: @escaping (_ result: Result<Data, Error>) -> Void) throws {
         // tricky to deal with since URL can take "invalid" URLs and still give you a non-nil value.
         // just for sanity sake, we check if the value is nil and throw if it is.
