@@ -40,6 +40,11 @@ public class PRKChopNetworking {
         } else {
             request = createRequest(url: url, httpMethod: httpMethod, body: body)
         }
+        switch httpMethod {
+            case .post, .put, .patch:
+                request.httpBody = try? JSONEncoder().encode(body)
+            default: break
+        }
         let publisher = createPublisherRequest(url: request)
         consumeRequest(request: publisher, completion: completion)
     }
@@ -47,7 +52,9 @@ public class PRKChopNetworking {
     public func createRequest<T: Encodable>(url: URL, httpMethod: HTTPRequestType, body: T = PRKChopEmptyBody() as! T, query: [URLQueryItem]) -> URLRequest {
         var r = URLComponents(url: url, resolvingAgainstBaseURL: false)!
         r.queryItems = query
-        return URLRequest(url: r.url!)
+        var request = URLRequest(url: r.url!)
+        request.httpMethod = httpMethod.rawValue
+        return request
     }
     
     public func createRequest<T: Encodable>(url: URL, httpMethod: HTTPRequestType, body: T = PRKChopEmptyBody() as! T) -> URLRequest {
