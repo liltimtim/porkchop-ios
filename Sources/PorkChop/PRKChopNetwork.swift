@@ -20,13 +20,14 @@ public class PRKChopNetworking {
     /* Time in seconds the request will wait for a response before timing out */
     private var defaultTimeout: Int = 30
     
-    public convenience init(with token: PRKChopAuthToken, cachePolicy: URLRequest.CachePolicy = .reloadIgnoringLocalAndRemoteCacheData, defaultTimeout: Int = 30) {
+    public convenience init(with token: PRKChopAuthToken, cachePolicy: URLRequest.CachePolicy = .reloadIgnoringLocalAndRemoteCacheData, defaultTimeout: Int = 30, debugMode: Bool = false) {
         self.init()
         self.sessionToken = token
         self.configuration.httpAdditionalHeaders = token.headerToken
         self.cachePolicy = cachePolicy
         self.defaultTimeout = defaultTimeout
         self.session = URLSession(configuration: self.configuration)
+        self.debugModeEnabled = debugMode
     }
     
     public init() { }
