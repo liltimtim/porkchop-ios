@@ -12,6 +12,8 @@ public class PRKChopNetworking {
     
     public var subscriptions: Set<AnyCancellable> = []
     
+    public var debugModeEnabled: Bool = false
+    
     private var sessionToken: PRKChopAuthToken?
     /* Caching policy applied to all requests for the instance of the class, default is to ignore all cache on device and on server.*/
     private var cachePolicy: URLRequest.CachePolicy = .reloadIgnoringLocalAndRemoteCacheData
@@ -46,6 +48,12 @@ public class PRKChopNetworking {
                 request.httpBody = try? JSONEncoder().encode(body)
             default: break
         }
+        if debugModeEnabled {
+            print("==== Request ====")
+            print("\(httpMethod.rawValue) - \(request.url?.absoluteString ?? "No URL Available")")
+            print("==== Request Body ====")
+            print(request.httpBody?.prettyPrintJSON ?? "No JSON given")
+        }
         let publisher = createPublisherRequest(url: request)
         consumeRequest(request: publisher, completion: completion)
     }
@@ -79,6 +87,13 @@ public class PRKChopNetworking {
             .receive(on: DispatchQueue.main)
             .tryMap() { e -> Data in
                 guard let httpResponse = e.response as? HTTPURLResponse else { throw NetworkErrorType.invalidResponse }
+                if self.debugModeEnabled {
+                    print("==== Response ====")
+                    print(e)
+                    print(e.response.url?.absoluteString ?? "")
+                    print("==== Response Body ====")
+                    print(e.data.prettyPrintJSON ?? "No JSON Body")
+                }
                 switch httpResponse.statusCode {
                 // handle 2xx type
                 case 200...299: break
