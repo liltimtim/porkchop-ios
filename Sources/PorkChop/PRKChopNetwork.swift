@@ -52,6 +52,8 @@ public class PRKChopNetworking {
         if debugModeEnabled {
             print("==== Request ====")
             print("\(httpMethod.rawValue) - \(request.url?.absoluteString ?? "No URL Available")")
+            print("==== Request Headers ====")
+            print(request.allHTTPHeaderFields ?? [:])
             print("==== Request Body ====")
             print(request.httpBody?.prettyPrintJSON ?? "No JSON given")
         }
@@ -73,6 +75,7 @@ public class PRKChopNetworking {
         switch httpMethod {
         case .post, .put, .patch:
             request.httpBody = try? JSONEncoder().encode(body)
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         default: break
         }
         return request
