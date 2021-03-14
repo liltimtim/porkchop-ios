@@ -63,6 +63,14 @@ class AuthenticationTokenTests: XCTestCase {
         XCTAssertNotNil(result)
         XCTAssertEqual(result, expectedDate)
     }
-
+    
+    func test_generatesValidAPIQueryParams() {
+        // given
+        let token = PRKChopDefaultQueryAPIToken("apiToken", "123")
+        let expectedQueryItem = URLQueryItem(name: "apiToken", value: "123")
+        
+        // then
+        XCTAssertEqual(token.queryItem, expectedQueryItem)
+    }
 }
 
