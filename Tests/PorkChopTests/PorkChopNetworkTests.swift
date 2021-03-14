@@ -236,6 +236,18 @@ class NetworkingInterfaceTests: XCTestCase {
         XCTAssertNotNil(result.httpBody)
         XCTAssertNotNil(body)
         XCTAssertEqual(body, json)
+        XCTAssertNil(result.url?.query)
+    }
+    
+    func test_createGETRequest_withAPITokenQueryItem() {
+        // given
+        let sut = PRKChopNetworking.init(with: PRKChopDefaultQueryAPIToken("apiKey", "apiValue"))
+        let expectedQuery = "apiKey=apiValue"
+        // when
+        let result = sut.createRequest(url: URL(string: "http://test.com")!, httpMethod: .get, body: PRKChopEmptyBody())
+        
+        // then
+        XCTAssertEqual(expectedQuery, result.url?.query)
     }
     
     // MARK: - Make network request tests

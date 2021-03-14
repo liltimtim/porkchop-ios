@@ -14,16 +14,21 @@ public class PRKChopNetworking {
     
     public var debugModeEnabled: Bool = false
     
-    private var sessionToken: PRKChopAuthToken?
+    private var sessionToken: PRKChopToken?
     /* Caching policy applied to all requests for the instance of the class, default is to ignore all cache on device and on server.*/
     private var cachePolicy: URLRequest.CachePolicy = .reloadIgnoringLocalAndRemoteCacheData
     /* Time in seconds the request will wait for a response before timing out */
     private var defaultTimeout: Int = 30
     
-    public convenience init(with token: PRKChopAuthToken, cachePolicy: URLRequest.CachePolicy = .reloadIgnoringLocalAndRemoteCacheData, defaultTimeout: Int = 30, debugMode: Bool = false) {
+    public convenience init(with token: PRKChopToken, cachePolicy: URLRequest.CachePolicy = .reloadIgnoringLocalAndRemoteCacheData, defaultTimeout: Int = 30, debugMode: Bool = false) {
         self.init()
         self.sessionToken = token
-        self.configuration.httpAdditionalHeaders = token.headerToken
+        // determine the token type
+        switch token {
+        case let t as PRKChopAuthToken:
+            self.configuration.httpAdditionalHeaders = t.headerToken
+        default: break
+        }
         self.cachePolicy = cachePolicy
         self.defaultTimeout = defaultTimeout
         self.session = URLSession(configuration: self.configuration)
@@ -64,13 +69,23 @@ public class PRKChopNetworking {
     public func createRequest<T: Encodable>(url: URL, httpMethod: HTTPRequestType, body: T = PRKChopEmptyBody() as! T, query: [URLQueryItem]) -> URLRequest {
         var r = URLComponents(url: url, resolvingAgainstBaseURL: false)!
         r.queryItems = query
+        // check to add an api token
+        if let t = sessionToken as? PRKChopAPIToken {
+            r.queryItems?.append(t.queryItem)
+        }
         var request = URLRequest(url: r.url!)
         request.httpMethod = httpMethod.rawValue
         return request
     }
     
     public func createRequest<T: Encodable>(url: URL, httpMethod: HTTPRequestType, body: T = PRKChopEmptyBody() as! T) -> URLRequest {
-        var request = URLRequest(url: url, cachePolicy: cachePolicy, timeoutInterval: TimeInterval(defaultTimeout))
+        
+        var r = URLComponents(url: url, resolvingAgainstBaseURL: false)!
+        if let t = sessionToken as? PRKChopAPIToken {
+            r.queryItems = []
+            r.queryItems?.append(t.queryItem)
+        }
+        var request = URLRequest(url: r.url!, cachePolicy: cachePolicy, timeoutInterval: TimeInterval(defaultTimeout))
         request.httpMethod = httpMethod.rawValue
         switch httpMethod {
         case .post, .put, .patch:
