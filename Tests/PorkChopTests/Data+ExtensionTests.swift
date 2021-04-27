@@ -81,6 +81,16 @@ class DataExtensionTests: XCTestCase {
         }
         XCTAssertGreaterThan(r.count, 0)
     }
+    
+    func test_canPrettyPrint() {
+        // given
+        let givenData =
+        """
+        { "id": "123" }
+        """
+            .data(using: .utf8)
+        XCTAssertNotNil(givenData?.prettyPrintJSON)
+    }
 }
 
 fileprivate struct SampleJSONObject: Encodable, Decodable, Equatable {
