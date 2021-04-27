@@ -12,6 +12,7 @@ class NetworkingInterfaceTests: XCTestCase {
     override func setUp() {
         super.setUp()
         sut = PRKChopNetworking()
+        sut.debugModeEnabled = true
         mockPublisher = PassthroughSubject<URLSession.DataTaskPublisher.Output, URLSession.DataTaskPublisher.Failure>().eraseToAnyPublisher()
         givenURLRequest = URLRequest(url: givenMockURL)
         sut.session = createMockSession()
@@ -236,6 +237,22 @@ class NetworkingInterfaceTests: XCTestCase {
         XCTAssertNotNil(result.httpBody)
         XCTAssertNotNil(body)
         XCTAssertEqual(body, json)
+    }
+    
+    func test_createGETRequest_queryShouldNotBeNil() {
+        // given
+        let givenQueryItems = [URLQueryItem(name: "test", value: "test_value")]
+        
+        // then
+        do {
+            MockURLProtocol.requestHandler = { request in
+                let response = HTTPURLResponse(url: self.givenMockURL, statusCode: 200, httpVersion: nil, headerFields: nil)!
+                return (response, Data())
+            }
+            try sut.make(for: givenMockURL.absoluteString, httpMethod: .get, body: PRKChopEmptyBody(), query: givenQueryItems, completion: { _ in })
+        } catch let err {
+            XCTFail("Create GET Request with Query threw an unexpected error: \(err.localizedDescription)")
+        }
     }
     
     // MARK: - Make network request tests
