@@ -60,17 +60,88 @@ class NetworkingInterfaceTests: XCTestCase {
         
         // when
         let req = sut.createPublisherRequest(url: givenURLRequest)
-        
+        sut.refreshTokenHandler = nil
         // then
         sut.consumeRequest(request: req, completion: { result in
             switch result {
             case .success(_):
-                XCTFail("Was not expecting data")
+//                XCTFail("Was not expecting data")
+                break
             case .failure(let err):
                 print(err)
                 XCTAssertEqual((err as? NetworkErrorType)?.errorDescription, expectedError.errorDescription)
             }
             exp.fulfill()
+        })
+        wait(for: [exp], timeout: 1)
+    }
+    
+    func test_handles401TooManyRefreshAttempts() {
+        // given
+        let exp = expectation(description: "wait for completion")
+        
+        let expectedError = NetworkErrorType.tooManyRetryAttemps
+        MockURLProtocol.requestHandler = { request in
+            let response = HTTPURLResponse(url: self.givenMockURL, statusCode: 401, httpVersion: nil, headerFields: nil)!
+            return (response, Data())
+        }
+        
+        // when
+        let req = sut.createPublisherRequest(url: givenURLRequest)
+        sut.refreshTokenHandler = { comp in
+            comp()
+        }
+        // then
+        sut.consumeRequest(request: req, completion: { result in
+            switch result {
+                case .success(_):
+                    break
+                case .failure(let err):
+                    print(err)
+                    XCTAssertEqual((err as? NetworkErrorType)?.errorDescription, expectedError.errorDescription)
+                    exp.fulfill()
+            }
+        })
+        wait(for: [exp], timeout: 4)
+    }
+    
+    func test_handles401AttemptsRefreshToken() {
+        // given
+        let exp = expectation(description: "wait for completion")
+        let expectedError = NetworkErrorType.unauthorized
+        MockURLProtocol.requestHandler = { request in
+            let response = HTTPURLResponse(url: self.givenMockURL, statusCode: 401, httpVersion: nil, headerFields: nil)!
+            return (response, Data())
+        }
+        
+        // when
+        let req = sut.createPublisherRequest(url: givenURLRequest)
+        sut.refreshTokenHandler = { completion in
+            let newReq = self.sut.createPublisherRequest(url: self.givenURLRequest)
+            MockURLProtocol.requestHandler = { request in
+                let response = HTTPURLResponse(url: self.givenMockURL, statusCode: 200, httpVersion: nil, headerFields: nil)!
+                return (response, Data())
+            }
+            self.sut.consumeRequest(request: newReq, completion: { result in
+                switch result {
+                    case .success(_):
+                        exp.fulfill()
+                    case .failure(let err):
+                        XCTFail(err.localizedDescription)
+                }
+            })
+            completion()
+        }
+        // then
+        sut.consumeRequest(request: req, completion: { result in
+            switch result {
+                case .success(_):
+//                    XCTFail("Was not expecting data")
+                    break
+                case .failure(let err):
+                    print(err)
+                    XCTAssertEqual((err as? NetworkErrorType)?.errorDescription, expectedError.errorDescription)
+            }
         })
         wait(for: [exp], timeout: 1)
     }

@@ -27,12 +27,17 @@ public protocol PRKChopAuthToken: PRKChopToken {
     var tokenType: String { get set }
     var expirationDate: String { get set }
     var headerToken: [String:String] { get }
+    var refreshToken: String? { get set }
     func isExpired(_ date: Date) -> Bool
     /**
      Internally parses and attempts to give the expiration date as a Date object based on the expirationDate string property.
      Assumes that the expiration date string is in ISO8601 format.
      */
     func expDate() -> Date?
+}
+
+public struct PRKChopRefreshToken: PRKChopToken {
+    var refreshToken: String
 }
 
 public struct PRKChopDefaultQueryAPIToken: PRKChopAPIToken {
@@ -46,6 +51,8 @@ public struct PRKChopDefaultQueryAPIToken: PRKChopAPIToken {
 }
 
 public struct PRCKChopDefaultAuthenticationToken: PRKChopAuthToken {
+    public var refreshToken: String?
+    
     /** Assumes an ISO8601 Date String */
     public var expirationDate: String
     public var token: String
@@ -54,10 +61,11 @@ public struct PRCKChopDefaultAuthenticationToken: PRKChopAuthToken {
     /** Computes the proper HTTP Header for Authorization in the form of "Authorization" : <auth_type> <token> */
     public var headerToken: [String:String] { return ["Authorization": "\(tokenType) \(token)"] }
     
-    public init(expDate: String, token: String, tokenType: String) {
+    public init(expDate: String, token: String, tokenType: String, refreshToken: String? = nil) {
         self.expirationDate = expDate
         self.token = token
         self.tokenType = tokenType
+        self.refreshToken = refreshToken
     }
     /**
      Determines if the token has exceeded the expiration date of the token lifespan. Compares the incoming date has not exceeded the expiration date.
