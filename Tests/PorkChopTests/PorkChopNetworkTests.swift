@@ -89,7 +89,7 @@ class NetworkingInterfaceTests: XCTestCase {
         // when
         let req = sut.createPublisherRequest(url: givenURLRequest)
         sut.refreshTokenHandler = { comp in
-            comp()
+            comp(false)
         }
         // then
         sut.consumeRequest(request: req, completion: { result in
@@ -130,7 +130,7 @@ class NetworkingInterfaceTests: XCTestCase {
                         XCTFail(err.localizedDescription)
                 }
             })
-            completion()
+            completion(true)
         }
         // then
         sut.consumeRequest(request: req, completion: { result in

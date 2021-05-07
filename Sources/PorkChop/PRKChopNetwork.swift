@@ -14,7 +14,7 @@ public class PRKChopNetworking {
     
     public var debugModeEnabled: Bool = false
     
-    public var refreshTokenHandler: ((@escaping () -> Void) -> Void)?
+    public var refreshTokenHandler: ((@escaping (Bool) -> Void) -> Void)?
     
     public var maxRetryCount: Int = 3
     
@@ -140,8 +140,12 @@ public class PRKChopNetworking {
                         case .unauthorized:
                             print("Current retry count \(currentRetryCount)")
                             if self.refreshTokenHandler != nil && currentRetryCount < self.maxRetryCount {
-                                self.refreshTokenHandler?({
-                                    self.consumeRequest(request: request, completion: completion, currentRetryCount: currentRetryCount + 1)
+                                self.refreshTokenHandler?({ completed in
+                                    if completed {
+                                        self.consumeRequest(request: request, completion: completion, currentRetryCount: currentRetryCount + 1)
+                                    } else {
+                                        completion(.failure(NetworkErrorType.tooManyRetryAttemps))
+                                    }
                                 })
                             } else {
                                 if currentRetryCount == self.maxRetryCount {
