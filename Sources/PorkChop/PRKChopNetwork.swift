@@ -14,6 +14,10 @@ public class PRKChopNetworking {
     
     public var debugModeEnabled: Bool = false
     
+    public var refreshTokenHandler: ((@escaping () -> Void) -> Void)?
+    
+    public var maxRetryCount: Int = 3
+    
     private var sessionToken: PRKChopToken?
     /* Caching policy applied to all requests for the instance of the class, default is to ignore all cache on device and on server.*/
     private var cachePolicy: URLRequest.CachePolicy = .reloadIgnoringLocalAndRemoteCacheData
@@ -101,7 +105,7 @@ public class PRKChopNetworking {
     }
     
     public func consumeRequest(request: AnyPublisher<URLSession.DataTaskPublisher.Output, URLSession.DataTaskPublisher.Failure>,
-                        completion: @escaping ( _ result: Result<Data, Error>) -> Void) {
+                               completion: @escaping ( _ result: Result<Data, Error>) -> Void, currentRetryCount: Int = 1) {
         request
             .receive(on: DispatchQueue.main)
             .tryMap() { e -> Data in
@@ -130,7 +134,30 @@ public class PRKChopNetworking {
         }
         .sink(receiveCompletion: {
             switch $0 {
-            case .failure(let err): completion(.failure(err))
+            case .failure(let err):
+                if let err = err as? NetworkErrorType {
+                    switch err {
+                        case .unauthorized:
+                            print("Current retry count \(currentRetryCount)")
+                            if self.refreshTokenHandler != nil && currentRetryCount < self.maxRetryCount {
+                                self.refreshTokenHandler?({
+                                    self.consumeRequest(request: request, completion: completion, currentRetryCount: currentRetryCount + 1)
+                                })
+                            } else {
+                                if currentRetryCount == self.maxRetryCount {
+                                    completion(.failure(NetworkErrorType.tooManyRetryAttemps))
+                                } else {
+                                    completion(.failure(err))
+                                }
+                            }
+                            
+                        default:
+                            completion(.failure(err))
+                    }
+                } else {
+                    completion(.failure(err))
+                }
+                
             case .finished: break
             }
         }, receiveValue: {
@@ -157,16 +184,18 @@ public enum NetworkErrorType: Error, LocalizedError {
     case serverError
     case notFound
     case invalidURL
+    case tooManyRetryAttemps
     var localizedDescription: String {
         switch self {
-        case .badStatus(let status): return "Status was \(status)"
-        case .invalidResponse: return "The server returned with a bad response."
-        case .unauthorized: return "Authentication is required to access this resource."
-        case .forbidden: return "User does not have proper permission to access this resource."
-        case .unknown: return "The server returned an unknown error."
-        case .serverError: return "The server returned an error."
-        case .notFound: return "The requested resource does not exist."
-        case .invalidURL: return "URL is malformed."
+            case .badStatus(let status): return "Status was \(status)"
+            case .invalidResponse: return "The server returned with a bad response."
+            case .unauthorized: return "Authentication is required to access this resource."
+            case .forbidden: return "User does not have proper permission to access this resource."
+            case .unknown: return "The server returned an unknown error."
+            case .serverError: return "The server returned an error."
+            case .notFound: return "The requested resource does not exist."
+            case .invalidURL: return "URL is malformed."
+            case .tooManyRetryAttemps: return "Request was retried too many times."
         }
     }
     public var errorDescription: String? { return localizedDescription }
