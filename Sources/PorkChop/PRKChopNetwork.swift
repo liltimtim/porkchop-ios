@@ -14,10 +14,6 @@ public class PRKChopNetworking {
     
     public var debugModeEnabled: Bool = false
     
-    public var refreshTokenHandler: ((@escaping (Bool) -> Void) -> Void)?
-    
-    public var maxRetryCount: Int = 3
-    
     private var sessionToken: PRKChopToken?
     /* Caching policy applied to all requests for the instance of the class, default is to ignore all cache on device and on server.*/
     private var cachePolicy: URLRequest.CachePolicy = .reloadIgnoringLocalAndRemoteCacheData
@@ -105,7 +101,7 @@ public class PRKChopNetworking {
     }
     
     public func consumeRequest(request: AnyPublisher<URLSession.DataTaskPublisher.Output, URLSession.DataTaskPublisher.Failure>,
-                               completion: @escaping ( _ result: Result<Data, Error>) -> Void, currentRetryCount: Int = 1) {
+                               completion: @escaping ( _ result: Result<Data, Error>) -> Void) {
         request
             .receive(on: DispatchQueue.main)
             .tryMap() { e -> Data in
@@ -118,56 +114,29 @@ public class PRKChopNetworking {
                     print(e.data.prettyPrintJSON ?? "No JSON Body")
                 }
                 switch httpResponse.statusCode {
-                // handle 2xx type
-                case 200...299: break
-                // handle 4xx type
-                case 401: throw NetworkErrorType.unauthorized
-                case 403: throw NetworkErrorType.forbidden
-                case 404: throw NetworkErrorType.notFound
-                // handle 5xx type
-                case 500...599:
-                    throw NetworkErrorType.serverError
-                default:
-                    throw NetworkErrorType.unknown
+                    // handle 2xx type
+                    case 200...299: break
+                    // handle 4xx type
+                    case 401: throw NetworkErrorType.unauthorized
+                    case 403: throw NetworkErrorType.forbidden
+                    case 404: throw NetworkErrorType.notFound
+                    // handle 5xx type
+                    case 500...599:
+                        throw NetworkErrorType.serverError
+                    default:
+                        throw NetworkErrorType.unknown
                 }
                 return e.data
-        }
-        .sink(receiveCompletion: {
-            switch $0 {
-            case .failure(let err):
-                if let err = err as? NetworkErrorType {
-                    switch err {
-                        case .unauthorized:
-                            print("Current retry count \(currentRetryCount)")
-                            if self.refreshTokenHandler != nil && currentRetryCount < self.maxRetryCount {
-                                self.refreshTokenHandler?({ completed in
-                                    if completed {
-                                        self.consumeRequest(request: request, completion: completion, currentRetryCount: currentRetryCount + 1)
-                                    } else {
-                                        completion(.failure(NetworkErrorType.tooManyRetryAttemps))
-                                    }
-                                })
-                            } else {
-                                if currentRetryCount == self.maxRetryCount {
-                                    completion(.failure(NetworkErrorType.tooManyRetryAttemps))
-                                } else {
-                                    completion(.failure(err))
-                                }
-                            }
-                            
-                        default:
-                            completion(.failure(err))
-                    }
-                } else {
-                    completion(.failure(err))
-                }
-                
-            case .finished: break
             }
-        }, receiveValue: {
-            completion(.success($0))
-        })
-        .store(in: &subscriptions)
+            .sink(receiveCompletion: {
+                switch $0 {
+                    case .failure(let err): completion(.failure(err))
+                    case .finished: break
+                }
+            }, receiveValue: {
+                completion(.success($0))
+            })
+            .store(in: &subscriptions)
     }
 }
 
