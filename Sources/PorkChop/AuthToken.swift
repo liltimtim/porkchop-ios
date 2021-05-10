@@ -61,6 +61,14 @@ public struct PRCKChopDefaultAuthenticationToken: PRKChopAuthToken {
     /** Computes the proper HTTP Header for Authorization in the form of "Authorization" : <auth_type> <token> */
     public var headerToken: [String:String] { return ["Authorization": "\(tokenType) \(token)"] }
     
+    public enum TokenToleranceLevel {
+        case months
+        case days
+        case hours
+        case minutes
+        case seconds
+    }
+    
     public init(expDate: String, token: String, tokenType: String, refreshToken: String? = nil) {
         self.expirationDate = expDate
         self.token = token
@@ -80,6 +88,33 @@ public struct PRCKChopDefaultAuthenticationToken: PRKChopAuthToken {
     
     public func expDate() -> Date? {
         return parseDate()
+    }
+    /**
+     Given a reference date, compares the expiration date of the token to the given date and
+     determines if the given tolerance is coming close to expiring based on the tolerance level.
+     We do not use DateComponents as this is dependent on the type of Calendar given not strictly
+     based on an ISO date.
+     
+     Example: Date, .hours, 4, would look at the date and see if the token is within 4 hours of
+     expiring.
+     */
+    public func isAboutToExpire(_ date: Date, toleranceLevel: TokenToleranceLevel, tolerance: Double) -> Bool {
+        // we don't know when the token is going to expire assume it is about to expire.
+        guard let expDate = self.expDate() else { return true }
+        var diff: Double
+        switch toleranceLevel {
+            case .days:
+                diff = date.timeIntervalSince(expDate).magnitude / 60.0 / 60.0 / 24.0
+            case .hours:
+                // convert seconds to hours 60 seconds -> minutes / 60 -> hours
+                diff = date.timeIntervalSince(expDate).magnitude / 60.0 / 60.0
+            case .minutes:
+                diff = date.timeIntervalSince(expDate).magnitude / 60.0
+            case .seconds:
+                diff = date.timeIntervalSince(expDate).magnitude
+            default: return true
+        }
+        return diff <= tolerance
     }
     
     private func parseDate() -> Date? {
