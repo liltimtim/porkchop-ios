@@ -73,18 +73,7 @@ class AuthenticationTokenTests: XCTestCase {
         XCTAssertEqual(token.queryItem, expectedQueryItem)
     }
     
-    func test_tokenIsAboutToExpire_outsideOfExpirationRange_Hours() {
-        // given
-        let givenExpDate = UnitTestUtils.createDate(days: 0, hours: 24, minutes: 0, seconds: 0) // create day 1 day in future from Jan1
-        let token = PRCKChopDefaultAuthenticationToken(expDate: UnitTestUtils.createISODate(from: givenExpDate), token: "", tokenType: "")
-        let givenDate = UnitTestUtils.createDate(days: 0, hours: 12, minutes: 0, seconds: 0)
-        // when
-        let result = token.isAboutToExpire(givenDate, toleranceLevel: .hours, tolerance: 4)
-        // then
-        XCTAssertFalse(result)
-    }
-    
-    func test_tokenIsAboutToExpire_insideOfExpirationRange_Hours() {
+    func test_tokenIsAboutToExpire_expired_Hours() {
         // given
         let givenExpDate = UnitTestUtils.createDate(days: 0, hours: 24, minutes: 0, seconds: 0) // create day 1 day in future from Jan1
         let token = PRCKChopDefaultAuthenticationToken(expDate: UnitTestUtils.createISODate(from: givenExpDate), token: "", tokenType: "")
@@ -95,7 +84,18 @@ class AuthenticationTokenTests: XCTestCase {
         XCTAssertTrue(result)
     }
     
-    func test_tokenIsAboutToExpire_outsideOfExpirationRange_Days() {
+    func test_tokenIsAboutToExpire_notExpired_Hours() {
+        // given
+        let givenExpDate = UnitTestUtils.createDate(days: 0, hours: 24, minutes: 0, seconds: 0) // create day 1 day in future from Jan1
+        let token = PRCKChopDefaultAuthenticationToken(expDate: UnitTestUtils.createISODate(from: givenExpDate), token: "", tokenType: "")
+        let givenDate = UnitTestUtils.createDate(days: 0, hours: 20, minutes: 0, seconds: 0)
+        // when
+        let result = token.isAboutToExpire(givenDate, toleranceLevel: .hours, tolerance: 4)
+        // then
+        XCTAssertTrue(result)
+    }
+    
+    func test_tokenIsAboutToExpire_expired_Days() {
         // given
         let givenExpDate = UnitTestUtils.createDate(days: 30, hours: 0, minutes: 0, seconds: 0) // create day 1 day in future from Jan1
         let token = PRCKChopDefaultAuthenticationToken(expDate: UnitTestUtils.createISODate(from: givenExpDate), token: "", tokenType: "")
@@ -106,7 +106,7 @@ class AuthenticationTokenTests: XCTestCase {
         XCTAssertFalse(result)
     }
     
-    func test_tokenIsAboutToExpire_insideOfExpirationRange_Days() {
+    func test_tokenIsAboutToExpire_notExpired_Days() {
         // given
         let givenExpDate = UnitTestUtils.createDate(days: 30, hours: 0, minutes: 0, seconds: 0) // create day 1 day in future from Jan1
         let token = PRCKChopDefaultAuthenticationToken(expDate: UnitTestUtils.createISODate(from: givenExpDate), token: "", tokenType: "")
@@ -117,7 +117,7 @@ class AuthenticationTokenTests: XCTestCase {
         XCTAssertTrue(result)
     }
     
-    func test_tokenIsAboutToExpire_outsideOfExpirationRange_Minutes() {
+    func test_tokenIsAboutToExpire_notExpired_Minutes() {
         // given
         let givenExpDate = UnitTestUtils.createDate(days: 0, hours: 0, minutes: 30, seconds: 0) // create day 1 day in future from Jan1
         let token = PRCKChopDefaultAuthenticationToken(expDate: UnitTestUtils.createISODate(from: givenExpDate), token: "", tokenType: "")
@@ -128,7 +128,7 @@ class AuthenticationTokenTests: XCTestCase {
         XCTAssertFalse(result)
     }
     
-    func test_tokenIsAboutToExpire_insideOfExpirationRange_Minutes() {
+    func test_tokenIsAboutToExpire_expired_Minutes() {
         // given
         let givenExpDate = UnitTestUtils.createDate(days: 0, hours: 0, minutes: 30, seconds: 0) // create day 1 day in future from Jan1
         let token = PRCKChopDefaultAuthenticationToken(expDate: UnitTestUtils.createISODate(from: givenExpDate), token: "", tokenType: "")
@@ -157,6 +157,17 @@ class AuthenticationTokenTests: XCTestCase {
         let givenDate = UnitTestUtils.createDate(days: 0, hours: 0, minutes: 0, seconds: 26)
         // when
         let result = token.isAboutToExpire(givenDate, toleranceLevel: .seconds, tolerance: 5)
+        // then
+        XCTAssertTrue(result)
+    }
+    
+    func test_tokenIsAboutToExpire_expired_farInFuture() {
+        // given
+        let givenExpDate = UnitTestUtils.createDate(days: 0, hours: 0, minutes: 0, seconds: 0)
+        let token = PRCKChopDefaultAuthenticationToken(expDate: UnitTestUtils.createISODate(from: givenExpDate), token: "", tokenType: "")
+        let givenDate = UnitTestUtils.createDate(days: 0, hours: 1, minutes: 0, seconds: 0)
+        // when
+        let result = token.isAboutToExpire(givenDate, toleranceLevel: .seconds, tolerance: 30)
         // then
         XCTAssertTrue(result)
     }

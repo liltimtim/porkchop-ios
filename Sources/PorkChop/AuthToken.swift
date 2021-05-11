@@ -101,6 +101,13 @@ public struct PRCKChopDefaultAuthenticationToken: PRKChopAuthToken {
     public func isAboutToExpire(_ date: Date, toleranceLevel: TokenToleranceLevel, tolerance: Double) -> Bool {
         // we don't know when the token is going to expire assume it is about to expire.
         guard let expDate = self.expDate() else { return true }
+        // is the incoming date greater than the exp date?
+        switch date.compare(expDate) {
+            case .orderedAscending, .orderedSame:
+                break
+            case .orderedDescending:
+                return true
+        }
         var diff: Double
         switch toleranceLevel {
             case .days:
@@ -114,7 +121,9 @@ public struct PRCKChopDefaultAuthenticationToken: PRKChopAuthToken {
                 diff = date.timeIntervalSince(expDate).magnitude
             default: return true
         }
-        return diff <= tolerance
+        let actualDiff = diff - tolerance
+        if actualDiff < 0 { return true }
+        return actualDiff <= tolerance
     }
     
     private func parseDate() -> Date? {
