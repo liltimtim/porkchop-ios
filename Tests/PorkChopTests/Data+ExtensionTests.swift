@@ -90,6 +90,7 @@ class DataExtensionTests: XCTestCase {
         """
             .data(using: .utf8)
         XCTAssertNotNil(givenData?.prettyPrintJSON)
+        XCTAssertEqual(givenData?.prettyPrintJSON, givenData?.prettyPrintJSON)
     }
 }
 
