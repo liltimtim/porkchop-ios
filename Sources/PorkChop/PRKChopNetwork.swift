@@ -59,6 +59,8 @@ public class PRKChopNetworking {
             print("\(httpMethod.rawValue) - \(request.url?.absoluteString ?? "No URL Available")")
             print("==== Request Headers ====")
             print(request.allHTTPHeaderFields ?? [:])
+            print("==== Configuration Headers ====")
+            print(self.session.configuration.httpAdditionalHeaders ?? "")
             print("==== Request Body ====")
             print(request.httpBody?.prettyPrintJSON ?? "No JSON given")
         }
