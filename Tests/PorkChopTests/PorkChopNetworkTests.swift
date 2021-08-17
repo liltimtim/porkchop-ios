@@ -9,6 +9,7 @@ class NetworkingInterfaceTests: XCTestCase {
     var givenURLRequest: URLRequest!
     let givenToken: String = "test_token_123"
     let givenTokenType: String = "bearer"
+    private var subscriptions: Set<AnyCancellable> = []
     override func setUp() {
         super.setUp()
         sut = PRKChopNetworking()
@@ -20,7 +21,93 @@ class NetworkingInterfaceTests: XCTestCase {
     
     override func tearDown() {
         sut = nil
+        subscriptions.forEach { $0.cancel() }
+        subscriptions = []
         super.tearDown()
+    }
+    
+    // MARK: - Network HTTP Publisher Tests
+    
+    func test_publisher_executes_http_status_handler() {
+        // given
+        let exp = expectation(description: "handle 200 status code with data")
+        exp.expectedFulfillmentCount = 2
+        MockURLProtocol.requestHandler = { request in
+            let response = HTTPURLResponse(url: self.givenMockURL, statusCode: 200, httpVersion: nil, headerFields: nil)!
+            return (response, self.sampleData())
+        }
+        
+        sut.createPublisherRequest(url: givenURLRequest, httpErrorStatusHandler: { _ in
+            exp.fulfill()
+        })
+            .sink(receiveCompletion: {
+                switch $0 {
+                case .failure(let failure):
+                    XCTFail(failure.localizedDescription)
+                case .finished:
+                    break
+                }
+            }, receiveValue: {
+                XCTAssertGreaterThan($0.count, 0)
+                exp.fulfill()
+            })
+            .store(in: &subscriptions)
+        
+        wait(for: [exp], timeout: 1)
+    }
+    
+    func test_publisher_executes_http_status_throws() {
+        // given
+        let exp = expectation(description: "handle 200 status code with data")
+        
+        MockURLProtocol.requestHandler = { request in
+            let response = HTTPURLResponse(url: self.givenMockURL, statusCode: 200, httpVersion: nil, headerFields: nil)!
+            return (response, self.sampleData())
+        }
+        let expectedThrowedStatus = NetworkErrorType.badStatus(status: -999)
+        sut.createPublisherRequest(url: givenURLRequest, httpErrorStatusHandler: { _ in
+            throw expectedThrowedStatus
+        })
+            .sink(receiveCompletion: {
+                switch $0 {
+                case .failure(let failure):
+                    XCTAssertEqual(failure.localizedDescription, expectedThrowedStatus.localizedDescription)
+                    exp.fulfill()
+                case .finished:
+                    break
+                }
+            }, receiveValue: { _ in
+                XCTFail("Got success but was expecting an error.")
+            })
+            .store(in: &subscriptions)
+        
+        wait(for: [exp], timeout: 1)
+    }
+    
+    func test_publisher_handles_200_status_code_with_data() {
+        // given
+        let exp = expectation(description: "handle 200 status code with data")
+        MockURLProtocol.requestHandler = { request in
+            let response = HTTPURLResponse(url: self.givenMockURL, statusCode: 200, httpVersion: nil, headerFields: nil)!
+            return (response, self.sampleData())
+        }
+        
+        sut.createPublisherRequest(url: givenURLRequest)
+            .sink(receiveCompletion: {
+                switch $0 {
+                case .failure(let failure):
+                    XCTFail(failure.localizedDescription)
+                case .finished:
+                    break
+                }
+            }, receiveValue: {
+                XCTAssertEqual(($0.response as! HTTPURLResponse).statusCode, 200)
+                XCTAssertGreaterThan($0.data.count, 0)
+                exp.fulfill()
+            })
+            .store(in: &subscriptions)
+        
+        wait(for: [exp], timeout: 1)
     }
     
     // MARK: - Network HTTP Status Code Tests
