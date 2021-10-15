@@ -102,19 +102,47 @@ public class PRKChopNetworking {
         return session.dataTaskPublisher(for: url).eraseToAnyPublisher()
     }
     
+    /**
+     Creates a data task publisher for a given url URLRequest.  Provides the ability to override the default http status code error handling in case API returns non-traditional error messaging or status codes.
+     For example, some servers return HTTP Status 200 even for requests that fail.  httpErrorStatusHandler would allow handling those types of situations.
+     */
+    public func createPublisherRequest(url: URLRequest, httpErrorStatusHandler: ((Int) throws -> Void)? = nil) -> AnyPublisher<Data, Error> {
+        return session
+            .dataTaskPublisher(for: url)
+            .receive(on: DispatchQueue.main)
+            .tryMap { [weak self] r -> Data in
+                guard let response = r.response as? HTTPURLResponse else {
+                    throw URLError(.badServerResponse)
+                }
+                self?.printDebug(output: r)
+                /// has provided httpErrorStatusHandler?
+                if httpErrorStatusHandler != nil {
+                    do {
+                        try httpErrorStatusHandler!(response.statusCode)
+                        return r.data
+                    } catch let e {
+                        throw e
+                    }
+                } else {
+                    /// no provided status handler, invoke default provider.
+                    do {
+                        try self?.handleHTTPResponse(with: response.statusCode)
+                        return r.data
+                    } catch let e {
+                        throw e
+                    }
+                }
+            }
+            .eraseToAnyPublisher()
+    }
+    
     public func consumeRequest(request: AnyPublisher<URLSession.DataTaskPublisher.Output, URLSession.DataTaskPublisher.Failure>,
                                completion: @escaping ( _ result: Result<Data, Error>) -> Void) {
         request
             .receive(on: DispatchQueue.main)
-            .tryMap() { e -> Data in
+            .tryMap() { [weak self] e -> Data in
                 guard let httpResponse = e.response as? HTTPURLResponse else { throw NetworkErrorType.invalidResponse }
-                if self.debugModeEnabled {
-                    print("==== Response ====")
-                    print(e)
-                    print(e.response.url?.absoluteString ?? "")
-                    print("==== Response Body ====")
-                    print(e.data.prettyPrintJSON ?? "No JSON Body")
-                }
+                self?.printDebug(output: e)
                 switch httpResponse.statusCode {
                     // handle 2xx type
                     case 200...299: break
@@ -139,6 +167,34 @@ public class PRKChopNetworking {
                 completion(.success($0))
             })
             .store(in: &subscriptions)
+    }
+    /**
+     Default handler for http responses.  Handles standard responses like 200 - 299 and throws specific network errors for other status codes.
+     */
+    internal func handleHTTPResponse(with responseCode: Int) throws {
+        switch responseCode {
+            // handle 2xx type
+            case 200...299: break
+            // handle 4xx type
+            case 401: throw NetworkErrorType.unauthorized
+            case 403: throw NetworkErrorType.forbidden
+            case 404: throw NetworkErrorType.notFound
+            // handle 5xx type
+            case 500...599:
+                throw NetworkErrorType.serverError
+            default:
+                throw NetworkErrorType.unknown
+        }
+    }
+    
+    internal func printDebug(output: URLSession.DataTaskPublisher.Output) {
+        if debugModeEnabled {
+            print("==== Response ====")
+            print(output)
+            print(output.response.url?.absoluteString ?? "")
+            print("==== Response Body ====")
+            print(output.data.prettyPrintJSON ?? "No JSON Body")
+        }
     }
 }
 
