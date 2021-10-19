@@ -11,6 +11,17 @@ class AuthenticationTokenTests: XCTestCase {
         super.tearDown()
     }
     
+    func test_createTokenWithSecondsExpiration() {
+        // given
+        let givenDate = UnitTestUtils.createDate()
+        let givenFutureDate = givenDate.addingTimeInterval(45)
+        sut = PRCKChopDefaultAuthenticationToken(refDate: givenDate, expDateInSeconds: 45, token: "", tokenType: "", refreshToken: nil)
+        // when
+        let result = sut.expDate()
+        // then
+        XCTAssertEqual(givenFutureDate, result)
+    }
+    
     func test_expirationDateIsNotExpired() {
         // given
         let givenDate = UnitTestUtils.createDate()

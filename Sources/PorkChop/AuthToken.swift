@@ -15,12 +15,12 @@ public protocol PRKChopAPIToken: PRKChopToken {
 }
 
 /**
-Protocol defining authentication type tokens
+ Protocol defining authentication type tokens
  
-Example Usage for Bearer type authentication token.  This is a common JWT token usage for APIs that authenticate using JWT header tokens.
-    
-    Header: Token based
-    Authorization: bearer <the_token>
+ Example Usage for Bearer type authentication token.  This is a common JWT token usage for APIs that authenticate using JWT header tokens.
+ 
+ Header: Token based
+ Authorization: bearer <the_token>
  */
 public protocol PRKChopAuthToken: PRKChopToken {
     var token: String { get set }
@@ -57,10 +57,9 @@ public struct PRCKChopDefaultAuthenticationToken: PRKChopAuthToken {
     public var expirationDate: String
     public var token: String
     public var tokenType: String
-
     /** Computes the proper HTTP Header for Authorization in the form of "Authorization" : <auth_type> <token> */
     public var headerToken: [String:String] { return ["Authorization": "\(tokenType) \(token)"] }
-    
+    /** Token Tolerance Level is a calendar value to determine the precision at which to measure if a token is about to expire or not. */
     public enum TokenToleranceLevel {
         case months
         case days
@@ -75,6 +74,30 @@ public struct PRCKChopDefaultAuthenticationToken: PRKChopAuthToken {
         self.tokenType = tokenType
         self.refreshToken = refreshToken
     }
+    /**
+     Creates an token that has an expiration time of seconds in the future.
+     
+     Example: given a reference date of 10/11/2021 at 13:00:00 and 45 seconds in the future at 13:00:45, the token expiration date would then be 10/11/2021 13:00:45.
+     
+     ## Example Usage
+     ```swift
+     let token = PRCKChopDefaultAuthenticationToken(refDate: Date(), 45, "<token>", nil)
+     ```
+     */
+    public init(refDate: Date,
+                expDateInSeconds: Int,
+                token: String,
+                tokenType: String,
+                refreshToken: String? = nil) {
+        self.token = token
+        self.tokenType = tokenType
+        self.refreshToken = refreshToken
+        self.expirationDate = Self.parse(from: Self.parseDate(fromSeconds: expDateInSeconds, refDate: refDate))
+    }
+    
+}
+
+extension PRCKChopDefaultAuthenticationToken {
     /**
      Determines if the token has exceeded the expiration date of the token lifespan. Compares the incoming date has not exceeded the expiration date.
      
@@ -95,24 +118,31 @@ public struct PRCKChopDefaultAuthenticationToken: PRKChopAuthToken {
      We do not use DateComponents as this is dependent on the type of Calendar given not strictly
      based on an ISO date.
      
+     ```
      Example: Date, .hours, 4, would look at the date and see if the token is within 4 hours of
      expiring.
+     ```
+     
+     ## Usage
+     ```swift
+     let isAboutToExpire = token.isAboutToExpire(Date(), .hours, 4)
+     ```
      */
     public func isAboutToExpire(_ date: Date, toleranceLevel: TokenToleranceLevel, tolerance: Double) -> Bool {
         // we don't know when the token is going to expire assume it is about to expire.
         guard let expDate = self.expDate() else { return true }
         var diff: Double
         switch toleranceLevel {
-            case .days:
-                diff = date.timeIntervalSince(expDate).magnitude / 60.0 / 60.0 / 24.0
-            case .hours:
-                // convert seconds to hours 60 seconds -> minutes / 60 -> hours
-                diff = date.timeIntervalSince(expDate).magnitude / 60.0 / 60.0
-            case .minutes:
-                diff = date.timeIntervalSince(expDate).magnitude / 60.0
-            case .seconds:
-                diff = date.timeIntervalSince(expDate).magnitude
-            default: return true
+        case .days:
+            diff = date.timeIntervalSince(expDate).magnitude / 60.0 / 60.0 / 24.0
+        case .hours:
+            // convert seconds to hours 60 seconds -> minutes / 60 -> hours
+            diff = date.timeIntervalSince(expDate).magnitude / 60.0 / 60.0
+        case .minutes:
+            diff = date.timeIntervalSince(expDate).magnitude / 60.0
+        case .seconds:
+            diff = date.timeIntervalSince(expDate).magnitude
+        default: return true
         }
         return diff <= tolerance
     }
@@ -121,5 +151,14 @@ public struct PRCKChopDefaultAuthenticationToken: PRKChopAuthToken {
         let dateFormatter = ISO8601DateFormatter()
         return dateFormatter.date(from: expirationDate)
     }
+    
+    private static func parseDate(fromSeconds seconds: Int, refDate: Date) -> Date? {
+        return refDate.addingTimeInterval(TimeInterval(seconds))
+    }
+    
+    private static func parse(from date: Date?) -> String {
+        if date == nil { return "" }
+        let formatter = ISO8601DateFormatter()
+        return formatter.string(from: date!)
+    }
 }
-
