@@ -26,6 +26,44 @@ class NetworkingInterfaceTests: XCTestCase {
         super.tearDown()
     }
     
+    // MARK: - Network HTTP Async Tests
+    func test_make_200_response_with_data() async {
+        // given
+        MockURLProtocol.requestHandler = { request in
+            let response = HTTPURLResponse(url: self.givenMockURL, statusCode: 200, httpVersion: nil, headerFields: nil)!
+            return (response, self.sampleData())
+        }
+        // when
+        let result = await sut.make(for: self.givenMockURL.absoluteString, httpMethod: .get, body: PRKChopEmptyBody())
+        // then
+        XCTAssertNotNil(result)
+    }
+    
+    func test_make_404_response_without_data() async {
+        // given
+        MockURLProtocol.requestHandler = { request in
+            let response = HTTPURLResponse(url: self.givenMockURL, statusCode: 404, httpVersion: nil, headerFields: nil)!
+            return (response, nil)
+        }
+        // when
+        let result = await sut.make(for: self.givenMockURL.absoluteString, httpMethod: .get, body: PRKChopEmptyBody())
+        // then
+        XCTAssertNil(result)
+    }
+    
+    // MARK: - Default HTTP Status Handler
+    func test_response_code_200() {
+        // given
+        let givenResponseCode = 200
+        
+        // when
+        do {
+            try sut.handleHTTPResponse(with: givenResponseCode)
+        } catch {
+            XCTFail("Failed with unexepcted throw: \(error.localizedDescription)")
+        }
+    }
+    
     // MARK: - Network HTTP Publisher Tests
     
     func test_publisher_executes_http_status_handler() {
