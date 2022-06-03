@@ -8,7 +8,7 @@ jobs:
 
     steps:
       - name: Generate Docs
-      - uses: fwcd/swift-docc-action@v1
+        uses: fwcd/swift-docc-action@v1
         with:
           target: PorkChop
           output: ./docs
