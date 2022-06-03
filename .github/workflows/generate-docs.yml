@@ -5,12 +5,7 @@ on:
 jobs:
   Build-Github-Actions:
     runs-on: [self-hosted, macOS]
-
     steps:
-      - uses: fwcd/swift-docc-action@v1
-        with:
-          target: PorkChop
-          output: ./docs
-          hosting-base-path: PorkChop
-          disable-indexing: "true"
-          transform-for-static-hosting: "true"
+      - uses: actions/checkout@v2
+      - name: Build DocC
+        run: xcodebuild docbuild -scheme PorkChop-Package -derivedDataPath /docs
