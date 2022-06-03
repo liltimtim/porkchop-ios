@@ -1,5 +1,3 @@
-name: Generate DocC
-
 on:
   push:
     branches: [feature/doc-gen]
