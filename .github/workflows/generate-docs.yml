@@ -8,4 +8,4 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Build DocC
-        run: xcodebuild docbuild -scheme PorkChop-Package -derivedDataPath /docs
+        run: xcodebuild docbuild -scheme PorkChop-Package -derivedDataPath .
