@@ -1,0 +1,11 @@
+on:
+  push:
+    branches: [feature/doc-gen]
+
+jobs:
+  Build-Github-Actions:
+    runs-on: [self-hosted, macOS]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build DocC
+        run: xcodebuild docbuild -scheme PorkChop-Package -derivedDataPath .
