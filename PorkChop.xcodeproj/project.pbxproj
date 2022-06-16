@@ -21,6 +21,7 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
+		5D22D155285993CA00FDB68A /* URL+Extension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D22D154285993CA00FDB68A /* URL+Extension.swift */; };
 		OBJ_30 /* AuthToken.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_9 /* AuthToken.swift */; };
 		OBJ_31 /* Data+Extension.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_10 /* Data+Extension.swift */; };
 		OBJ_32 /* EmptyBody.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_11 /* EmptyBody.swift */; };
@@ -52,6 +53,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		5D22D154285993CA00FDB68A /* URL+Extension.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "URL+Extension.swift"; sourceTree = "<group>"; };
 		OBJ_10 /* Data+Extension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Data+Extension.swift"; sourceTree = "<group>"; };
 		OBJ_11 /* EmptyBody.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyBody.swift; sourceTree = "<group>"; };
 		OBJ_12 /* PRKChopNetwork.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PRKChopNetwork.swift; sourceTree = "<group>"; };
@@ -140,6 +142,7 @@
 		OBJ_8 /* PorkChop */ = {
 			isa = PBXGroup;
 			children = (
+				5D22D154285993CA00FDB68A /* URL+Extension.swift */,
 				OBJ_9 /* AuthToken.swift */,
 				OBJ_10 /* Data+Extension.swift */,
 				OBJ_11 /* EmptyBody.swift */,
@@ -236,6 +239,7 @@
 				OBJ_30 /* AuthToken.swift in Sources */,
 				OBJ_31 /* Data+Extension.swift in Sources */,
 				OBJ_32 /* EmptyBody.swift in Sources */,
+				5D22D155285993CA00FDB68A /* URL+Extension.swift in Sources */,
 				OBJ_33 /* PRKChopNetwork.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
