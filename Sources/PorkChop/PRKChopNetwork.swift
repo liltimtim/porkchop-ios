@@ -147,19 +147,7 @@ public class PRKChopNetworking {
             .tryMap() { [weak self] e -> Data in
                 guard let httpResponse = e.response as? HTTPURLResponse else { throw NetworkErrorType.invalidResponse }
                 self?.printDebug(output: e)
-                switch httpResponse.statusCode {
-                    // handle 2xx type
-                    case 200...299: break
-                    // handle 4xx type
-                    case 401: throw NetworkErrorType.unauthorized
-                    case 403: throw NetworkErrorType.forbidden
-                    case 404: throw NetworkErrorType.notFound
-                    // handle 5xx type
-                    case 500...599:
-                        throw NetworkErrorType.serverError
-                    default:
-                        throw NetworkErrorType.unknown
-                }
+                try self?.handleHTTPResponse(with: httpResponse.statusCode)
                 return e.data
             }
             .sink(receiveCompletion: {
