@@ -2,18 +2,18 @@ name: Swift
 
 on:
   push:
-    branches: [ ** ]
+    branches:
+      - "**"
   pull_request:
-    branches: [ development ]
+    branches: [development]
 
 jobs:
   build:
-
     runs-on: [self-hosted, macOS]
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Build
-      run: swift build -v
-    - name: Run tests
-      run: swift test -v
+      - uses: actions/checkout@v2
+      - name: Build
+        run: swift build -v
+      - name: Run tests
+        run: swift test -v
