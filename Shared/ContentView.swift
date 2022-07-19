@@ -45,7 +45,11 @@ class ContentViewModel: ObservableObject {
     @MainActor
     func fetchPosts() async {
         loading = true
-        posts = await Post.all(networkProvider: networking) ?? []
+        do {
+            posts = try await Post.all(networkProvider: networking) ?? []
+        } catch {
+            print(error.localizedDescription)
+        }
         loading = false
     }
 }
@@ -67,18 +71,17 @@ extension ContentViewModel {
             case id, title, body
         }
         
-        static func all<T>(networkProvider: PRKChopNetworking) async -> T? where T : Decodable {
-            return await networkProvider
-                .make(for: APIRepo.baseURL.appendingPathComponent("posts").absoluteString,
-                      httpMethod: .get,
-                      body: PRKChopEmptyBody())?
+        static func all<T>(networkProvider: PRKChopNetworking) async throws -> T? where T : Decodable {
+            let request = networkProvider.createRequest(url: APIRepo.baseURL.appendingPathComponent("posts"), httpMethod: .get, body: PRKChopEmptyBody())
+            return try await networkProvider
+                .make(for: request)
                 .tryTransform(type: [Post].self) as? T
         }
     }
 }
 
 protocol ResourceRouteProvider {
-    static func all<T: Decodable>(networkProvider: PRKChopNetworking) async -> T?
+    static func all<T: Decodable>(networkProvider: PRKChopNetworking) async throws -> T?
 }
 
 struct ContentView_Previews: PreviewProvider {
