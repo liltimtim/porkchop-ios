@@ -32,6 +32,7 @@
 		5D22D1582859985800FDB68A /* PorkChop.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = "PorkChop::PorkChop::Product" /* PorkChop.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		5D22D15C2859985E00FDB68A /* PorkChop.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = "PorkChop::PorkChop::Product" /* PorkChop.framework */; platformFilter = ios; };
 		5D22D15D2859985E00FDB68A /* PorkChop.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = "PorkChop::PorkChop::Product" /* PorkChop.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		5D5CBC02287FA45B00672678 /* PRKChopComposableRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D5CBC01287FA45B00672678 /* PRKChopComposableRequest.swift */; };
 		OBJ_30 /* AuthToken.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_9 /* AuthToken.swift */; };
 		OBJ_31 /* Data+Extension.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_10 /* Data+Extension.swift */; };
 		OBJ_32 /* EmptyBody.swift in Sources */ = {isa = PBXBuildFile; fileRef = OBJ_11 /* EmptyBody.swift */; };
@@ -109,6 +110,7 @@
 		5D22D145285991E100FDB68A /* ExampleApplication.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ExampleApplication.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		5D22D147285991E100FDB68A /* macOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = macOS.entitlements; sourceTree = "<group>"; };
 		5D22D154285993CA00FDB68A /* URL+Extension.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "URL+Extension.swift"; sourceTree = "<group>"; };
+		5D5CBC01287FA45B00672678 /* PRKChopComposableRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PRKChopComposableRequest.swift; sourceTree = "<group>"; };
 		OBJ_10 /* Data+Extension.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Data+Extension.swift"; sourceTree = "<group>"; };
 		OBJ_11 /* EmptyBody.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyBody.swift; sourceTree = "<group>"; };
 		OBJ_12 /* PRKChopNetwork.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PRKChopNetwork.swift; sourceTree = "<group>"; };
@@ -248,6 +250,7 @@
 				OBJ_10 /* Data+Extension.swift */,
 				OBJ_11 /* EmptyBody.swift */,
 				OBJ_12 /* PRKChopNetwork.swift */,
+				5D5CBC01287FA45B00672678 /* PRKChopComposableRequest.swift */,
 			);
 			name = PorkChop;
 			path = Sources/PorkChop;
@@ -429,6 +432,7 @@
 				OBJ_31 /* Data+Extension.swift in Sources */,
 				OBJ_32 /* EmptyBody.swift in Sources */,
 				5D22D155285993CA00FDB68A /* URL+Extension.swift in Sources */,
+				5D5CBC02287FA45B00672678 /* PRKChopComposableRequest.swift in Sources */,
 				OBJ_33 /* PRKChopNetwork.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

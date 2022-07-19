@@ -36,8 +36,74 @@ public class PRKChopNetworking {
     }
     
     public init() { }
+    /// Create a request object with values required to make an HTTP request.
+    ///
+    /// Supports a HTTP method, optional body to send and query parameters in URL
+    public func createRequest<T: Encodable>(url: URL,
+                                            httpMethod: HTTPRequestType,
+                                            body: T = PRKChopEmptyBody() as! T,
+                                            query: [URLQueryItem]) -> URLRequest {
+        var r = URLComponents(url: url, resolvingAgainstBaseURL: false)!
+        r.queryItems = query
+        // check to add an api token
+        if let t = sessionToken as? PRKChopAPIToken {
+            r.queryItems?.append(t.queryItem)
+        }
+        var request = URLRequest(url: r.url!)
+        request.httpMethod = httpMethod.rawValue
+        return request
+    }
     
-    public func make<T: Encodable>(for url: String, httpMethod: HTTPRequestType, body: T, query: [URLQueryItem]? = nil, completion: @escaping (_ result: Result<Data, Error>) -> Void) throws {
+    public func createRequest<T: Encodable>(url: URL,
+                                            httpMethod: HTTPRequestType,
+                                            body: T = PRKChopEmptyBody() as! T) -> URLRequest {
+        var r = URLComponents(url: url, resolvingAgainstBaseURL: false)!
+        if let t = sessionToken as? PRKChopAPIToken {
+            r.queryItems = []
+            r.queryItems?.append(t.queryItem)
+        }
+        var request = URLRequest(url: r.url!, cachePolicy: cachePolicy, timeoutInterval: TimeInterval(defaultTimeout))
+        request.httpMethod = httpMethod.rawValue
+        switch httpMethod {
+        case .post, .put, .patch:
+            request.httpBody = try? JSONEncoder().encode(body)
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        default: break
+        }
+        return request
+    }
+    
+    public func make(for request: URLRequest) async throws -> Data {
+        return try await withCheckedThrowingContinuation { [weak session] continuation in
+            
+            guard let session = session else {
+                continuation.resume(with: .failure(NetworkErrorType.unknown))
+                return
+            }
+            session.dataTask(with: request, completionHandler: { [weak self] (data, response, error) in
+                guard let response = response as? HTTPURLResponse else {
+                    continuation.resume(with: .failure(NetworkErrorType.invalidResponse))
+                    return
+                }
+                guard error == nil else {
+                    continuation.resume(with: .failure(error!))
+                    return
+                }
+                do {
+                    try self?.handleHTTPResponse(with: response.statusCode)
+                    guard let data = data else {
+                        continuation.resume(with: .failure(NetworkErrorType.invalidResponse))
+                        return
+                    }
+                    continuation.resume(with: .success(data))
+                } catch {
+                    continuation.resume(with: .failure(error))
+                }
+            }).resume()
+        }
+    }
+    
+    internal func make<T: Encodable>(for url: String, httpMethod: HTTPRequestType, body: T, query: [URLQueryItem]? = nil, completion: @escaping (_ result: Result<Data, Error>) -> Void) throws {
         do {
             let request = try composeRequest(for: url, httpMethod: httpMethod, body: body, query: query)
             let publisher = createPublisherRequest(url: request)
@@ -48,7 +114,7 @@ public class PRKChopNetworking {
         
     }
     
-    public func make<T: Encodable>(for url: String, httpMethod: HTTPRequestType, body: T, query: [URLQueryItem]? = nil) async -> Data? {
+    internal func make<T: Encodable>(for url: String, httpMethod: HTTPRequestType, body: T, query: [URLQueryItem]? = nil) async -> Data? {
         do {
             return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Data?, Error>) -> Void in
                 do {
@@ -72,37 +138,7 @@ public class PRKChopNetworking {
         }
     }
     
-    public func createRequest<T: Encodable>(url: URL, httpMethod: HTTPRequestType, body: T = PRKChopEmptyBody() as! T, query: [URLQueryItem]) -> URLRequest {
-        var r = URLComponents(url: url, resolvingAgainstBaseURL: false)!
-        r.queryItems = query
-        // check to add an api token
-        if let t = sessionToken as? PRKChopAPIToken {
-            r.queryItems?.append(t.queryItem)
-        }
-        var request = URLRequest(url: r.url!)
-        request.httpMethod = httpMethod.rawValue
-        return request
-    }
-    
-    public func createRequest<T: Encodable>(url: URL, httpMethod: HTTPRequestType, body: T = PRKChopEmptyBody() as! T) -> URLRequest {
-        
-        var r = URLComponents(url: url, resolvingAgainstBaseURL: false)!
-        if let t = sessionToken as? PRKChopAPIToken {
-            r.queryItems = []
-            r.queryItems?.append(t.queryItem)
-        }
-        var request = URLRequest(url: r.url!, cachePolicy: cachePolicy, timeoutInterval: TimeInterval(defaultTimeout))
-        request.httpMethod = httpMethod.rawValue
-        switch httpMethod {
-        case .post, .put, .patch:
-            request.httpBody = try? JSONEncoder().encode(body)
-            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        default: break
-        }
-        return request
-    }
-    
-    public func createPublisherRequest(url: URLRequest) -> AnyPublisher<URLSession.DataTaskPublisher.Output, URLSession.DataTaskPublisher.Failure> {
+    internal func createPublisherRequest(url: URLRequest) -> AnyPublisher<URLSession.DataTaskPublisher.Output, URLSession.DataTaskPublisher.Failure> {
         return session.dataTaskPublisher(for: url).eraseToAnyPublisher()
     }
     
@@ -110,7 +146,8 @@ public class PRKChopNetworking {
      Creates a data task publisher for a given url URLRequest.  Provides the ability to override the default http status code error handling in case API returns non-traditional error messaging or status codes.
      For example, some servers return HTTP Status 200 even for requests that fail.  httpErrorStatusHandler would allow handling those types of situations.
      */
-    public func createPublisherRequest(url: URLRequest, httpErrorStatusHandler: ((Int) throws -> Void)? = nil) -> AnyPublisher<Data, Error> {
+    internal func createPublisherRequest(url: URLRequest,
+                                       httpErrorStatusHandler: ((Int) throws -> Void)? = nil) -> AnyPublisher<Data, Error> {
         return session
             .dataTaskPublisher(for: url)
             .receive(on: DispatchQueue.main)
@@ -140,7 +177,7 @@ public class PRKChopNetworking {
             .eraseToAnyPublisher()
     }
     
-    public func consumeRequest(request: AnyPublisher<URLSession.DataTaskPublisher.Output, URLSession.DataTaskPublisher.Failure>,
+    internal func consumeRequest(request: AnyPublisher<URLSession.DataTaskPublisher.Output, URLSession.DataTaskPublisher.Failure>,
                                completion: @escaping ( _ result: Result<Data, Error>) -> Void) {
         request
             .receive(on: DispatchQueue.main)

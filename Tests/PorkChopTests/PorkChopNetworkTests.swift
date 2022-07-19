@@ -26,6 +26,55 @@ class NetworkingInterfaceTests: XCTestCase {
         super.tearDown()
     }
     
+    func test_make_200_with_make() async {
+        // given
+        MockURLProtocol.requestHandler = { req in
+            let response = HTTPURLResponse(url: self.givenMockURL, statusCode: 200, httpVersion: nil, headerFields: nil)!
+            return (response, self.sampleData())
+        }
+        // when
+        do {
+            let request = sut.createRequest(url: "https://test.com",
+                                            httpMethod: .get,
+                                            body: PRKChopEmptyBody())
+            _ = try await sut.make(for: request)
+            
+        } catch {
+            XCTFail(error.localizedDescription)
+        }
+    }
+    /// Make a request where the server doesn't return valid JSON data
+    func test_make_200_with_post_invalid_response() async {
+        MockURLProtocol.requestHandler = { req in
+            let response = HTTPURLResponse(url: self.givenMockURL, statusCode: 200, httpVersion: nil, headerFields: nil)!
+            return (response, "<html></html>".data(using: .utf8)!)
+        }
+        // when
+        do {
+            let request = sut.createRequest(url: "https://test.com",
+                                            httpMethod: .post,
+                                            body: PRKChopEmptyBody())
+            _ = try await sut.make(for: request)
+        } catch {
+            XCTFail(error.localizedDescription)
+        }
+    }
+    
+    /// Tests whether we handle cases where we post something but do not care about the response body
+    func test_make_200_with_post_empty_response() async {
+        MockURLProtocol.requestHandler = { req in
+            let response = HTTPURLResponse(url: self.givenMockURL, statusCode: 200, httpVersion: nil, headerFields: nil)!
+            return (response, nil)
+        }
+        // when
+        do {
+            let request = sut.createRequest(url: "https://test.com", httpMethod: .post, body: PRKChopEmptyBody())
+            _ = try await sut.make(for: request)
+        } catch {
+            XCTFail(error.localizedDescription)
+        }
+    }
+    
     // MARK: - Network HTTP Async Tests
     func test_make_200_response_with_data() async {
         // given
