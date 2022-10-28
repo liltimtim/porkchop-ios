@@ -83,9 +83,14 @@ class NetworkingInterfaceTests: XCTestCase {
             return (response, self.sampleData())
         }
         // when
-        let result = await sut.make(for: self.givenMockURL.absoluteString, httpMethod: .get, body: PRKChopEmptyBody())
-        // then
-        XCTAssertNotNil(result)
+        let request = sut.createRequest(url: self.givenMockURL, httpMethod: .get, body: PRKChopEmptyBody())
+        do {
+            let result = try await sut.make(for: request)
+            // then
+            XCTAssertNotNil(result)
+        } catch {
+            XCTFail(error.localizedDescription)
+        }
     }
     
     func test_make_404_response_without_data() async {
@@ -94,10 +99,13 @@ class NetworkingInterfaceTests: XCTestCase {
             let response = HTTPURLResponse(url: self.givenMockURL, statusCode: 404, httpVersion: nil, headerFields: nil)!
             return (response, nil)
         }
-        // when
-        let result = await sut.make(for: self.givenMockURL.absoluteString, httpMethod: .get, body: PRKChopEmptyBody())
-        // then
-        XCTAssertNil(result)
+        let request = sut.createRequest(url: self.givenMockURL, httpMethod: .get, body: PRKChopEmptyBody())
+        do {
+            _ = try await sut.make(for: request)
+            XCTFail("Should not have succeeded")
+        } catch {
+            XCTAssertEqual(error.localizedDescription, NetworkErrorType.notFound.localizedDescription)
+        }
     }
     
     // MARK: - Default HTTP Status Handler
@@ -111,245 +119,6 @@ class NetworkingInterfaceTests: XCTestCase {
         } catch {
             XCTFail("Failed with unexepcted throw: \(error.localizedDescription)")
         }
-    }
-    
-    // MARK: - Network HTTP Publisher Tests
-    
-    func test_publisher_executes_http_status_handler() {
-        // given
-        let exp = expectation(description: "handle 200 status code with data")
-        exp.expectedFulfillmentCount = 2
-        MockURLProtocol.requestHandler = { request in
-            let response = HTTPURLResponse(url: self.givenMockURL, statusCode: 200, httpVersion: nil, headerFields: nil)!
-            return (response, self.sampleData())
-        }
-        
-        sut.createPublisherRequest(url: givenURLRequest, httpErrorStatusHandler: { _ in
-            exp.fulfill()
-        })
-            .sink(receiveCompletion: {
-                switch $0 {
-                case .failure(let failure):
-                    XCTFail(failure.localizedDescription)
-                case .finished:
-                    break
-                }
-            }, receiveValue: {
-                XCTAssertGreaterThan($0.count, 0)
-                exp.fulfill()
-            })
-            .store(in: &subscriptions)
-        
-        wait(for: [exp], timeout: 1)
-    }
-    
-    func test_publisher_executes_http_status_throws() {
-        // given
-        let exp = expectation(description: "handle 200 status code with data")
-        
-        MockURLProtocol.requestHandler = { request in
-            let response = HTTPURLResponse(url: self.givenMockURL, statusCode: 200, httpVersion: nil, headerFields: nil)!
-            return (response, self.sampleData())
-        }
-        let expectedThrowedStatus = NetworkErrorType.badStatus(status: -999)
-        sut.createPublisherRequest(url: givenURLRequest, httpErrorStatusHandler: { _ in
-            throw expectedThrowedStatus
-        })
-            .sink(receiveCompletion: {
-                switch $0 {
-                case .failure(let failure):
-                    XCTAssertEqual(failure.localizedDescription, expectedThrowedStatus.localizedDescription)
-                    exp.fulfill()
-                case .finished:
-                    break
-                }
-            }, receiveValue: { _ in
-                XCTFail("Got success but was expecting an error.")
-            })
-            .store(in: &subscriptions)
-        
-        wait(for: [exp], timeout: 1)
-    }
-    
-    func test_publisher_handles_200_status_code_with_data() {
-        // given
-        let exp = expectation(description: "handle 200 status code with data")
-        MockURLProtocol.requestHandler = { request in
-            let response = HTTPURLResponse(url: self.givenMockURL, statusCode: 200, httpVersion: nil, headerFields: nil)!
-            return (response, self.sampleData())
-        }
-        
-        sut.createPublisherRequest(url: givenURLRequest)
-            .sink(receiveCompletion: {
-                switch $0 {
-                case .failure(let failure):
-                    XCTFail(failure.localizedDescription)
-                case .finished:
-                    break
-                }
-            }, receiveValue: {
-                XCTAssertEqual(($0.response as! HTTPURLResponse).statusCode, 200)
-                XCTAssertGreaterThan($0.data.count, 0)
-                exp.fulfill()
-            })
-            .store(in: &subscriptions)
-        
-        wait(for: [exp], timeout: 1)
-    }
-    
-    // MARK: - Network HTTP Status Code Tests
-    
-    func test_handle200StatusCodeWithData() {
-        // given
-        let exp = expectation(description: "handle 200 status code with data")
-        MockURLProtocol.requestHandler = { request in
-            let response = HTTPURLResponse(url: self.givenMockURL, statusCode: 200, httpVersion: nil, headerFields: nil)!
-            return (response, self.sampleData())
-        }
-        
-        // when
-        let req = sut.createPublisherRequest(url: givenURLRequest)
-        sut.consumeRequest(request: req, completion: { result in
-            switch result {
-            case .success(let data):
-                XCTAssertGreaterThan(data.count, 0)
-            case .failure(let err):
-                XCTFail(err.localizedDescription)
-            }
-            exp.fulfill()
-        })
-        
-        // then
-        wait(for: [exp], timeout: 1)
-    }
-    
-    func test_handles401StatusCode() {
-        // given
-        let exp = expectation(description: "wait for completion")
-        let expectedError = NetworkErrorType.unauthorized
-        MockURLProtocol.requestHandler = { request in
-            let response = HTTPURLResponse(url: self.givenMockURL, statusCode: 401, httpVersion: nil, headerFields: nil)!
-            return (response, Data())
-        }
-        
-        // when
-        let req = sut.createPublisherRequest(url: givenURLRequest)
-        // then
-        sut.consumeRequest(request: req, completion: { result in
-            switch result {
-            case .success(_):
-                XCTFail("Was not expecting data")
-                break
-            case .failure(let err):
-                print(err)
-                XCTAssertEqual((err as? NetworkErrorType)?.errorDescription, expectedError.errorDescription)
-            }
-            exp.fulfill()
-        })
-        wait(for: [exp], timeout: 1)
-    }
-    
-    func test_handles403StatusCode() {
-        // given
-        let exp = expectation(description: "wait for completion")
-        let expectedError = NetworkErrorType.forbidden
-        MockURLProtocol.requestHandler = { request in
-            let response = HTTPURLResponse(url: self.givenMockURL, statusCode: 403, httpVersion: nil, headerFields: nil)!
-            return (response, Data())
-        }
-        
-        // when
-        let req = sut.createPublisherRequest(url: givenURLRequest)
-        
-        // then
-        sut.consumeRequest(request: req, completion: { result in
-            switch result {
-            case .success(_):
-                XCTFail("Was not expecting data")
-            case .failure(let err):
-                print(err)
-                XCTAssertEqual((err as? NetworkErrorType)?.errorDescription, expectedError.errorDescription)
-            }
-            exp.fulfill()
-        })
-        wait(for: [exp], timeout: 1)
-    }
-    
-    func test_handles404StatusCode() {
-        // given
-        let exp = expectation(description: "wait for completion")
-        let expectedError = NetworkErrorType.notFound
-        MockURLProtocol.requestHandler = { request in
-            let response = HTTPURLResponse(url: self.givenMockURL, statusCode: 404, httpVersion: nil, headerFields: nil)!
-            return (response, Data())
-        }
-        
-        // when
-        let req = sut.createPublisherRequest(url: givenURLRequest)
-        
-        // then
-        sut.consumeRequest(request: req, completion: { result in
-            switch result {
-            case .success(_):
-                XCTFail("Was not expecting data")
-            case .failure(let err):
-                print(err)
-                XCTAssertEqual((err as? NetworkErrorType)?.errorDescription, expectedError.errorDescription)
-            }
-            exp.fulfill()
-        })
-        wait(for: [exp], timeout: 1)
-    }
-    
-    func test_handles5xxStatusCode() {
-        // given
-        let exp = expectation(description: "wait for completion")
-        let expectedError = NetworkErrorType.serverError
-        MockURLProtocol.requestHandler = { request in
-            let response = HTTPURLResponse(url: self.givenMockURL, statusCode: 500, httpVersion: nil, headerFields: nil)!
-            return (response, Data())
-        }
-        
-        // when
-        let req = sut.createPublisherRequest(url: givenURLRequest)
-        
-        // then
-        sut.consumeRequest(request: req, completion: { result in
-            switch result {
-            case .success(_):
-                XCTFail("Was not expecting data")
-            case .failure(let err):
-                print(err)
-                XCTAssertEqual((err as? NetworkErrorType)?.errorDescription, expectedError.errorDescription)
-            }
-            exp.fulfill()
-        })
-        wait(for: [exp], timeout: 1)
-    }
-    
-    func test_handlesDefaultAndOutofBoundsStatusCode() {
-        // given
-        let exp = expectation(description: "wait for completion")
-        let expectedError = NetworkErrorType.unknown
-        MockURLProtocol.requestHandler = { request in
-            let response = HTTPURLResponse(url: self.givenMockURL, statusCode: 600, httpVersion: nil, headerFields: nil)!
-            return (response, Data())
-        }
-        
-        // when
-        let req = sut.createPublisherRequest(url: givenURLRequest)
-        
-        // then
-        sut.consumeRequest(request: req, completion: { result in
-            switch result {
-            case .success(_):
-                XCTFail("Was not expecting data")
-            case .failure(let err):
-                XCTAssertEqual((err as? NetworkErrorType)?.errorDescription, expectedError.errorDescription)
-            }
-            exp.fulfill()
-        })
-        wait(for: [exp], timeout: 1)
     }
     
     // MARK: - URL Request Generation Tests
@@ -437,7 +206,7 @@ class NetworkingInterfaceTests: XCTestCase {
         XCTAssertEqual(expectedQuery, result.url?.query)
     }
     
-    func test_createGETRequest_queryShouldNotBeNil() {
+    func test_createGETRequest_queryShouldNotBeNil() async {
         // given
         let givenQueryItems = [URLQueryItem(name: "test", value: "test_value")]
         
@@ -447,7 +216,8 @@ class NetworkingInterfaceTests: XCTestCase {
                 let response = HTTPURLResponse(url: self.givenMockURL, statusCode: 200, httpVersion: nil, headerFields: nil)!
                 return (response, Data())
             }
-            try sut.make(for: givenMockURL.absoluteString, httpMethod: .get, body: PRKChopEmptyBody(), query: givenQueryItems, completion: { _ in })
+            let request = sut.createRequest(url: givenMockURL, httpMethod: .get, body: PRKChopEmptyBody(), query: givenQueryItems)
+            _ = try await sut.make(for: request)
         } catch let err {
             XCTFail("Create GET Request with Query threw an unexpected error: \(err.localizedDescription)")
         }
@@ -455,7 +225,7 @@ class NetworkingInterfaceTests: XCTestCase {
     
     // MARK: - Make network request tests
     
-    func test_givenValidURL_doesNotThrowURLException() {
+    func test_givenValidURL_doesNotThrowURLException() async {
         // given
         let givenValidURL = givenMockURL.absoluteString
         
@@ -465,7 +235,8 @@ class NetworkingInterfaceTests: XCTestCase {
                 let response = HTTPURLResponse(url: self.givenMockURL, statusCode: 200, httpVersion: nil, headerFields: nil)!
                 return (response, Data())
             }
-            try sut.make(for: givenValidURL, httpMethod: .get, body: PRKChopEmptyBody(), completion: { _ in })
+            let request = sut.createRequest(url: URL(string: givenValidURL)!, httpMethod: .get, body: PRKChopEmptyBody())
+            _ = try await sut.make(for: request)
         } catch let err {
             XCTFail("Valid URL threw an unexpected error: \(err.localizedDescription)")
         }

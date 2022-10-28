@@ -18,10 +18,13 @@ extension Data: Transformable {
         
         return prettyPrintedString as String
     }
+    /// Attempts to transform given data to a `Decodable` type conforming object. Throws an error if this fails.
+    ///
+    /// - Throws: Error when JSON fails to transform to the given type
     public func transforming<T>(type: T.Type) throws -> T where T : Decodable {
         return try JSONDecoder().decode(T.self, from: self)
     }
-    
+    /// Optionally attempts to transform given data to a `Decodable` type conforming object.
     public func tryTransform<T>(type: T.Type) -> T? where T : Decodable {
         return try? JSONDecoder().decode(T.self, from: self)
     }
