@@ -7,7 +7,7 @@ let package = Package(
     name: "PorkChop",
     platforms: [
         .iOS(SupportedPlatform.IOSVersion.v13),
-        .macOS(SupportedPlatform.MacOSVersion.v10_15),
+        .macOS(SupportedPlatform.MacOSVersion.v11),
         .watchOS(SupportedPlatform.WatchOSVersion.v7),
         .tvOS(SupportedPlatform.TVOSVersion.v13)
     ],
