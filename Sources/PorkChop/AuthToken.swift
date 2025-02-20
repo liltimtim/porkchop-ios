@@ -58,7 +58,12 @@ public struct PRCKChopDefaultAuthenticationToken: PRKChopAuthToken {
     public var token: String
     public var tokenType: String
     /** Computes the proper HTTP Header for Authorization in the form of "Authorization" : <auth_type> <token> */
-    public var headerToken: [String:String] { return ["Authorization": "\(tokenType) \(token)"] }
+    public var headerToken: [String:String] {
+        if tokenType.isEmpty {
+            return ["Authorization": "\(token)"]
+        }
+        return ["Authorization": "\(tokenType) \(token)"]
+    }
     /** Token Tolerance Level is a calendar value to determine the precision at which to measure if a token is about to expire or not. */
     public enum TokenToleranceLevel {
         case months
@@ -67,7 +72,11 @@ public struct PRCKChopDefaultAuthenticationToken: PRKChopAuthToken {
         case minutes
         case seconds
     }
-    
+    /**
+     Creates a token with exp date with optional refresh token if provided.
+     
+     - Note: If you pass in an empty string for token type, the `tokenType` property will adjust yielding` ["Authorization": "<token>"]`
+     */
     public init(expDate: String, token: String, tokenType: String, refreshToken: String? = nil) {
         self.expirationDate = expDate
         self.token = token
