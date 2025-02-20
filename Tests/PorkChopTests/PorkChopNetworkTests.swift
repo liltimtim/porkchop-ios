@@ -158,6 +158,20 @@ class NetworkingInterfaceTests: XCTestCase {
         XCTAssertEqual(result.url?.query, expectedString)
     }
     
+    func test_createsValidURLHeaders_withUpdatedSessionToken() {
+        // given
+        let expDate = UnitTestUtils.createISODate(from: UnitTestUtils.createDate())
+        let firstToken = "\(givenTokenType) \(givenToken)"
+        let updatedToken = "updated_token"
+        sut = PRKChopNetworking(with: PRCKChopDefaultAuthenticationToken(expDate: expDate, token: firstToken, tokenType: givenTokenType))
+        sut.updateAuthorizationToken(with: PRCKChopDefaultAuthenticationToken(expDate: "", token: updatedToken, tokenType: ""))
+        // when
+        let result = sut.configuration.httpAdditionalHeaders as? [String:String]
+        
+        // then
+        XCTAssertEqual(result?["Authorization"], updatedToken)
+    }
+    
     // MARK: - URL Request Creation Tests
     func test_createGETRequest_bodyShouldBeNil() {
         // when
@@ -221,6 +235,13 @@ class NetworkingInterfaceTests: XCTestCase {
         } catch let err {
             XCTFail("Create GET Request with Query threw an unexpected error: \(err.localizedDescription)")
         }
+    }
+    
+    func test_createRequest_withAdditionalHeadersPresent() {
+        let sut = PRKChopNetworking()
+        let additionalHeaders: [String: String] = ["Test": "Header"]
+        let result = sut.createRequest(url: self.givenMockURL, httpMethod: .get, body: PRKChopEmptyBody(), additionalHeaders: additionalHeaders)
+        XCTAssertEqual(result.value(forHTTPHeaderField: "Test"), "Header")
     }
     
     // MARK: - Make network request tests

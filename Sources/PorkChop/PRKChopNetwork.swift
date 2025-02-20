@@ -56,7 +56,8 @@ public class PRKChopNetworking {
     
     public func createRequest<T: Encodable>(url: URL,
                                             httpMethod: HTTPRequestType,
-                                            body: T = PRKChopEmptyBody() as! T) -> URLRequest {
+                                            body: T = PRKChopEmptyBody() as! T,
+                                            additionalHeaders: [String: String] = [:]) -> URLRequest {
         var r = URLComponents(url: url, resolvingAgainstBaseURL: false)!
         if let t = sessionToken as? PRKChopAPIToken {
             r.queryItems = []
@@ -69,6 +70,10 @@ public class PRKChopNetworking {
             request.httpBody = try? JSONEncoder().encode(body)
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         default: break
+        }
+        // add any additional headers if present
+        for (k, v) in additionalHeaders {
+            request.setValue(v, forHTTPHeaderField: k)
         }
         return request
     }
@@ -100,6 +105,32 @@ public class PRKChopNetworking {
                     continuation.resume(with: .failure(error))
                 }
             }).resume()
+        }
+    }
+    
+    public func updateAuthorizationToken(with newToken: PRKChopAuthToken) {
+        self.sessionToken = newToken
+        updateConfiguration(with: newToken)
+    }
+    /// Updates the `URLSessionConfiguration` with a new authentication token.
+    ///
+    /// This method modifies the `httpAdditionalHeaders` dictionary of the `URLSessionConfiguration`
+    /// to include or update the `Authorization` key with the provided token's value.
+    ///
+    /// - Important: Only instances of `PRKChopAuthToken` will update the authentication header.
+    ///   Other token types will be ignored.
+    ///
+    /// - Parameter token: A `PRKChopToken` instance used to update the session configuration.
+    ///   If `token` is of type `PRKChopAuthToken`, its `headerToken` value replaces the current
+    ///   `Authorization` header in `httpAdditionalHeaders`.
+    ///
+    /// - Note: The method does nothing if `token` is not a `PRKChopAuthToken`.
+    internal func updateConfiguration(with token: PRKChopToken) {
+        // determine the token type
+        switch token {
+        case let t as PRKChopAuthToken:
+            self.configuration.httpAdditionalHeaders = t.headerToken
+        default: break
         }
     }
 

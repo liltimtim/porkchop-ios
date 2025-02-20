@@ -61,6 +61,20 @@ class AuthenticationTokenTests: XCTestCase {
         XCTAssertEqual(result, expectedToken)
     }
     
+    func test_generatesValidHeaderTokenWithNoneTokenType() {
+        // given
+        let token = "123"
+        let tokenType = ""
+        let expectedToken: [String:String] = ["Authorization": "\(token)"]
+        sut = PRCKChopDefaultAuthenticationToken(expDate: "", token: token, tokenType: tokenType)
+        
+        // when
+        let result = sut.headerToken
+        
+        // then
+        XCTAssertEqual(result, expectedToken)
+    }
+    
     func test_getDateFromValidDateString() {
         // given
         let expectedDate = UnitTestUtils.createDate()
