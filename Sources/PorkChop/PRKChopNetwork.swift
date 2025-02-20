@@ -71,6 +71,10 @@ public class PRKChopNetworking {
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         default: break
         }
+        // add any additional headers if present
+        for (k, v) in additionalHeaders {
+            request.setValue(v, forHTTPHeaderField: k)
+        }
         return request
     }
     

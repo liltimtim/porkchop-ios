@@ -237,6 +237,13 @@ class NetworkingInterfaceTests: XCTestCase {
         }
     }
     
+    func test_createRequest_withAdditionalHeadersPresent() {
+        let sut = PRKChopNetworking()
+        let additionalHeaders: [String: String] = ["Test": "Header"]
+        let result = sut.createRequest(url: self.givenMockURL, httpMethod: .get, body: PRKChopEmptyBody(), additionalHeaders: additionalHeaders)
+        XCTAssertEqual(result.value(forHTTPHeaderField: "Test"), "Header")
+    }
+    
     // MARK: - Make network request tests
     
     func test_givenValidURL_doesNotThrowURLException() async {
